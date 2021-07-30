@@ -1,7 +1,9 @@
 package com.ufabc.mcta025.leilao;
 
+import java.net.UnknownHostException;
 import java.util.Scanner;
 
+import com.ufabc.mcta025.zkprimitives.ZKLock;
 import com.ufabc.mcta025.zkprimitives.ZKQueue;
 import com.ufabc.mcta025.zkprimitives.ZKState;
 
@@ -19,17 +21,20 @@ public class AuctionManager extends AuthoritativeManager implements Watcher {
 
     public int auctionState;
     private int currentBid = -1;
-    private int retValue = -1;
+    private int bidNumbers = 5;
     private int endTime;
     private ZKQueue zkQueue;
     private ZKState zkStateAuction;
     private ZKState zkStateBid;
+    private ZKLock zkLock;
+    final long WAIT_LOCK = 10*1000;
 
-    public AuctionManager(String address, String auctionPath, String bidQueuePath, String maxBidPath, int endTime)
-            throws KeeperException, InterruptedException {
+    public AuctionManager(String address, String auctionPath, String bidQueuePath, String maxBidPath, String lockPath, int endTime)
+            throws KeeperException, InterruptedException, UnknownHostException {
         this.zkStateAuction = new ZKState(address, auctionPath);
         this.zkStateBid = new ZKState(address, maxBidPath);
         this.zkQueue = new ZKQueue(address, bidQueuePath);
+        this.zkLock = new ZKLock(address, lockPath, WAIT_LOCK);
         this.endTime = endTime;
         setAuctionState(AuctionState.WAITING);
     }
@@ -61,11 +66,16 @@ public class AuctionManager extends AuthoritativeManager implements Watcher {
                 zkQueue.produce(currentBid);
                 // if (!hasAuthorization) return;
                 updateMaxBid();
+                bidNumbers--;
                 if (System.currentTimeMillis() - zkStateAuction.getStat().getMtime() >= endTime * 1000) {
                     System.out.println("[Auction Manager]: Since no bids have been placed in the last " + endTime
                             + " second(s), the auction will now end.");
                     setAuctionState(AuctionState.ENDED);
                     break;
+                }
+                if(bidNumbers == 0){
+                    zkLock.lock();
+                    bidNumbers = 5;
                 }
             }
             System.out.println("[Auction Manager]: End of auction.");
@@ -86,10 +96,9 @@ public class AuctionManager extends AuthoritativeManager implements Watcher {
         while (!zkQueue.isEmpty()) {
             int bid = zkQueue.consume();
             if (bid > getMaxBid()) {
-                retValue = bid;
+                this.zkStateBid.setState(bid);
             }
         }
-        this.zkStateBid.setState(retValue);
     }
 
     public void setAuctionState(int state) throws KeeperException, InterruptedException {
