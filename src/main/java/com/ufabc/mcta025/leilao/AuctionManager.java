@@ -69,7 +69,7 @@ public class AuctionManager extends AuthoritativeManager implements Watcher {
                     setAuctionState(AuctionState.ENDED);
                 }
                 if (hasEnded()) {
-                    System.out.println("[AUCTION MANAGER]: Since no bids have been placed in the last " + endTime
+                    System.out.println("[AUCTION MANAGER]: Since no bids have been placed in the last " + endTime / 1000
                             + " second(s), the auction will now end.");
                     break;
                 }
