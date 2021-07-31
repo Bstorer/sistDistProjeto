@@ -2,9 +2,6 @@ package com.ufabc.mcta025.zkprimitives;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-
-import javax.xml.stream.util.StreamReaderDelegate;
 
 import com.ufabc.mcta025.zktools.ZKOperator;
 
