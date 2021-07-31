@@ -19,7 +19,6 @@ public class AuctionManager extends AuthoritativeManager implements Watcher {
         public static final int ENDED = 2;
     }
 
-    public int auctionState;
     private int currentBid = -1;
     private int bidNumbers = 5;
     private int endTime;
@@ -27,10 +26,10 @@ public class AuctionManager extends AuthoritativeManager implements Watcher {
     private ZKState zkStateAuction;
     private ZKState zkStateBid;
     private ZKLock zkLock;
-    final long WAIT_LOCK = 10*1000;
+    final long WAIT_LOCK = 10 * 1000;
 
-    public AuctionManager(String address, String auctionPath, String bidQueuePath, String maxBidPath, String lockPath, int endTime)
-            throws KeeperException, InterruptedException, UnknownHostException {
+    public AuctionManager(String address, String auctionPath, String bidQueuePath, String maxBidPath, String lockPath,
+            int endTime) throws KeeperException, InterruptedException, UnknownHostException {
         this.zkStateAuction = new ZKState(address, auctionPath);
         this.zkStateBid = new ZKState(address, maxBidPath);
         this.zkQueue = new ZKQueue(address, bidQueuePath);
@@ -41,44 +40,45 @@ public class AuctionManager extends AuthoritativeManager implements Watcher {
 
     public void run() {
         try {
-            System.out.println("[Auction Manager]: Starting auction.");
+            System.out.println("[AUCTION MANAGER]: Starting auction.");
             zkStateAuction.initialize();
             zkStateBid.initialize();
             if (hasAuthorization) {
                 zkStateBid.setState(0); // Reset initial maxBid
             }
             setAuctionState(AuctionState.RUNNING);
-            System.out.println("[Auction Manager]: Creating bid queue.");
+            System.out.println("[AUCTION MANAGER]: Creating bid queue.");
             boolean bidQueueCreated = zkQueue.initialize();
             if (bidQueueCreated) {
-                System.out.println("[Auction Manager]: Bid queue created.");
+                System.out.println("[AUCTION MANAGER]: Bid queue created.");
             } else {
-                System.out.println("[Auction Manager]: Bid queue already exists.");
+                System.out.println("[AUCTION MANAGER]: Bid queue already exists.");
             }
             Scanner s = new Scanner(System.in);
-            while (auctionState == AuctionState.RUNNING) {
+            while (isRunning()) {
                 int maxBid = getMaxBid();
                 if (maxBid != -1) {
-                    System.out.println("[Auction Manager]: Current winning bid: [" + maxBid + "].");
+                    System.out.println("[AUCTION MANAGER]: Current winning bid: [" + maxBid + "].");
                 }
-                System.out.println("[Auction Manager]: Enter your bid:");
+                System.out.println("[AUCTION MANAGER]: Enter your bid:");
                 currentBid = s.nextInt();
                 zkQueue.produce(currentBid);
-                // if (!hasAuthorization) return;
                 updateMaxBid();
                 bidNumbers--;
-                if (System.currentTimeMillis() - zkStateAuction.getStat().getMtime() >= endTime * 1000) {
-                    System.out.println("[Auction Manager]: Since no bids have been placed in the last " + endTime
-                            + " second(s), the auction will now end.");
+                if (hasAuthorization && System.currentTimeMillis() - zkStateAuction.getStat().getMtime() >= endTime) {
                     setAuctionState(AuctionState.ENDED);
+                }
+                if (hasEnded()) {
+                    System.out.println("[AUCTION MANAGER]: Since no bids have been placed in the last " + endTime
+                            + " second(s), the auction will now end.");
                     break;
                 }
-                if(bidNumbers == 0){
+                if (bidNumbers == 0) {
                     zkLock.lock();
                     bidNumbers = 5;
                 }
             }
-            System.out.println("[Auction Manager]: End of auction.");
+            System.out.println("[AUCTION MANAGER]: End of auction.");
             setAuctionState(AuctionState.ENDED);
             s.close();
         } catch (KeeperException |
@@ -102,8 +102,15 @@ public class AuctionManager extends AuthoritativeManager implements Watcher {
     }
 
     public void setAuctionState(int state) throws KeeperException, InterruptedException {
-        auctionState = state;
         zkStateAuction.setState(state);
+    }
+
+    public boolean isRunning() throws KeeperException, InterruptedException {
+        return zkStateAuction.getState() == AuctionState.RUNNING;
+    }
+
+    public boolean hasEnded() throws KeeperException, InterruptedException {
+        return zkStateAuction.getState() == AuctionState.ENDED;
     }
 
     @Override

@@ -32,11 +32,13 @@ public class LobbyManager extends AuthoritativeManager {
             }
             synchronized (this) {
                 System.out.println("[LOBBY MANAGER]: Waiting for others to join...");
-                while (!zkBarrier.barrierIsFull) {
-                    zkBarrier.checkBarrier();
+                while (!zkBarrier.hasReleaseState()) {
+                    if (hasAuthorization) {
+                        zkBarrier.updateReleaseState();
+                    }
                 }
+                System.out.println("[LOBBY MANAGER]: Lobby is full.");
             }
-            System.out.println("[LOBBY MANAGER]: Lobby is full.");
             System.out.println("[LOBBY MANAGER]: Leaving the lobby.");
             zkBarrier.leave();
             System.out.println("[LOBBY MANAGER]: Left the lobby.");

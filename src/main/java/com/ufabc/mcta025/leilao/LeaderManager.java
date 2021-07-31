@@ -41,4 +41,8 @@ public class LeaderManager extends AuthoritativeManager {
             e.printStackTrace();
         }
     }
+
+    public boolean hasLeader() throws KeeperException, InterruptedException {
+        return zkElector.hasLeader();
+    }
 }

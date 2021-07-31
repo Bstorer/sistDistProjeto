@@ -65,4 +65,7 @@ public class ZKElector extends ZKPrimitive {
         }
     }
 
+    public boolean hasLeader() throws KeeperException, InterruptedException {
+        return ZKOperator.exists(zk, leader);
+    }
 }
