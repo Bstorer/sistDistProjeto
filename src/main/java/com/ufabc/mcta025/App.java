@@ -11,7 +11,7 @@ import org.apache.zookeeper.KeeperException;
 public final class App {
     public static final int V_MAJOR = 0;
     public static final int V_MINOR = 1;
-    public static final int V_PATCH = 1;
+    public static final int V_PATCH = 2;
 
     public static void main(String[] args) throws UnknownHostException {
         final String HOST = "localhost";
@@ -23,7 +23,7 @@ public final class App {
         final String PATH_MAX_BID = "/max_bid";
         final String PATH_LOCK = "/lock";
         final int MIN_CLIENTS = 2;
-        final int END_TIME = 10 * 1000;
+        final int END_TIME = 15 * 1000;
         final String version = String.format("%d.%d.%d", V_MAJOR, V_MINOR, V_PATCH);
 
         System.out.println("[DISTRIBUTED AUCTION] v" + version);
