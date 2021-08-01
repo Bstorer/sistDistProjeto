@@ -65,7 +65,7 @@ public class AuctionManager extends AuthoritativeManager implements Watcher {
                 zkQueue.produce(currentBid);
                 updateMaxBid();
                 bidNumbers--;
-                if (hasAuthorization && System.currentTimeMillis() - zkStateAuction.getStat().getMtime() >= endTime) {
+                if (hasAuthorization && System.currentTimeMillis() - zkStateBid.getStat().getMtime() >= endTime) {
                     setAuctionState(AuctionState.ENDED);
                 }
                 if (hasEnded()) {

@@ -22,7 +22,7 @@ public final class App {
         final String PATH_BID_QUEUE = "/bid_queue";
         final String PATH_MAX_BID = "/max_bid";
         final String PATH_LOCK = "/lock";
-        final int MIN_CLIENTS = 3;
+        final int MIN_CLIENTS = 2;
         final int END_TIME = 10 * 1000;
         final String version = String.format("%d.%d.%d", V_MAJOR, V_MINOR, V_PATCH);
 
